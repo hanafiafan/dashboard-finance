@@ -265,6 +265,7 @@ function renderShell() {
         ${nav("operations", "table-2", "Operasional")}
         ${nav("approval", "badge-check", "Approval")}
         ${nav("master", "settings-2", "Master")}
+        ${nav("docs", "book-open-check", "Panduan")}
       </nav>
       <div class="side-footer">
         <button class="btn ghost" onclick="refreshAll()"><i data-lucide="refresh-cw"></i>Refresh</button>
@@ -278,13 +279,9 @@ function renderShell() {
           <p class="eyebrow">Finance operating system</p>
           <h2 class="page-title" id="pageTitle"></h2>
         </div>
-        <div class="top-actions">
-          ${canApprove() ? `<button class="btn amber" onclick="importSources()"><i data-lucide="download-cloud"></i>Import</button>` : ""}
-          <button class="btn ghost" onclick="exportCurrentCsv()"><i data-lucide="file-down"></i>CSV</button>
-          <button class="btn blue" onclick="refreshAll()"><i data-lucide="refresh-cw"></i>Refresh</button>
-        </div>
+        <div class="top-actions" id="topActions"></div>
       </div>
-      <section class="filter-band">
+      <section class="filter-band" id="filterBand">
         <div class="field"><label>Company</label><select id="companyFilter"></select></div>
         <div class="field"><label>Brand</label><select id="brandFilter"></select></div>
         <div class="field"><label>Dari tanggal</label><input id="startDate" type="date"></div>
@@ -296,6 +293,7 @@ function renderShell() {
       <section id="view-operations" class="view"></section>
       <section id="view-approval" class="view"></section>
       <section id="view-master" class="view"></section>
+      <section id="view-docs" class="view"></section>
     </main>
   `;
   populateFilters();
@@ -333,12 +331,15 @@ function renderView() {
   const target = document.getElementById(`view-${app.view}`);
   if (!target) return;
   target.classList.add("active");
+  document.getElementById("filterBand")?.classList.toggle("is-hidden", app.view === "docs");
+  renderTopActions();
   const titles = {
     command: "Command center",
     analytics: "Analytics board",
     operations: "Operasional harian",
     approval: "Approval finance",
     master: "Master data",
+    docs: "Panduan penggunaan",
   };
   document.getElementById("pageTitle").textContent = titles[app.view];
   if (app.view === "command") renderCommand();
@@ -346,7 +347,25 @@ function renderView() {
   if (app.view === "operations") renderOperations();
   if (app.view === "approval") renderApproval();
   if (app.view === "master") renderMaster();
+  if (app.view === "docs") renderDocs();
   paintIcons();
+}
+
+function renderTopActions() {
+  const target = document.getElementById("topActions");
+  if (!target) return;
+  if (app.view === "docs") {
+    target.innerHTML = `
+      <button class="btn ghost" onclick="window.print()"><i data-lucide="printer"></i>Print</button>
+      <button class="btn blue" onclick="refreshAll()"><i data-lucide="refresh-cw"></i>Refresh</button>
+    `;
+    return;
+  }
+  target.innerHTML = `
+    ${canApprove() ? `<button class="btn amber" onclick="importSources()"><i data-lucide="download-cloud"></i>Import</button>` : ""}
+    <button class="btn ghost" onclick="exportCurrentCsv()"><i data-lucide="file-down"></i>CSV</button>
+    <button class="btn blue" onclick="refreshAll()"><i data-lucide="refresh-cw"></i>Refresh</button>
+  `;
 }
 
 function renderCommand() {
@@ -459,6 +478,186 @@ function renderMaster() {
     </div>
   `;
   loadRows(app.master, "master");
+}
+
+function renderDocs() {
+  const session = app.state.session || {};
+  const role = app.demo ? "demo" : session.role || "guest";
+  const brandScope = session.brandScope || (app.state.brands || []).map(item => item["Brand Key"]).join(", ");
+  document.getElementById("view-docs").innerHTML = `
+    <div class="docs-hero panel tight">
+      <div>
+        <p class="eyebrow">Dokumentasi internal</p>
+        <h3>Finance Dashboard Playbook</h3>
+        <p>Panduan operasional untuk membaca statistik, menginput data harian, approval finance, mengelola master data, dan menjaga raw spreadsheet tetap rapi.</p>
+      </div>
+      <div class="docs-profile">
+        <span class="role-pill"><i data-lucide="badge-check"></i>${escapeHtml(role)}</span>
+        <strong>${escapeHtml(session.email || currentEmail() || "Demo User")}</strong>
+        <small>Scope brand: ${escapeHtml(brandScope || "-")}</small>
+      </div>
+    </div>
+
+    <div class="docs-grid">
+      ${docCard("Akses", "Login dengan email yang terdaftar di sheet Users dan password dashboard. Akses menu mengikuti role dan brand scope.", "key-round")}
+      ${docCard("Sumber data", "Semua transaksi tersimpan di Google Sheets. Perubahan dari dashboard akan update ke raw database.", "database")}
+      ${docCard("Kontrol role", "Superadmin dan finance punya akses luas. Owner hanya baca. PIC brand hanya mengelola brand scope masing-masing.", "shield-check")}
+      ${docCard("Ritme kerja", "Input harian, review antrian approval, cek cashflow, lalu audit raw bila ada data tidak sinkron.", "calendar-check")}
+    </div>
+
+    <div class="docs-layout">
+      <aside class="docs-index panel tight">
+        <h3>Daftar isi</h3>
+        <a href="#docs-login">Login dan role</a>
+        <a href="#docs-navigation">Menu dashboard</a>
+        <a href="#docs-daily">SOP harian</a>
+        <a href="#docs-crud">Input dan CRUD</a>
+        <a href="#docs-approval">Approval finance</a>
+        <a href="#docs-master">Master data</a>
+        <a href="#docs-raw">Raw spreadsheet</a>
+        <a href="#docs-troubleshooting">Troubleshooting</a>
+        <a href="#docs-faq">FAQ</a>
+      </aside>
+
+      <div class="docs-content">
+        ${docSection("docs-login", "Login dan role", "user-check", `
+          <p>Dashboard memakai kombinasi email dan password dashboard. Email harus terdaftar di sheet <b>Users</b> dan kolom <b>Active</b> harus bernilai TRUE.</p>
+          <div class="docs-table-wrap">
+            <table class="docs-table">
+              <thead><tr><th>Role</th><th>Akses utama</th><th>Batasan</th></tr></thead>
+              <tbody>
+                <tr><td>superadmin</td><td>Melihat semua data, CRUD operasional, approval, master data, dan user.</td><td>Gunakan untuk owner sistem atau pengelola pusat.</td></tr>
+                <tr><td>finance</td><td>CRUD transaksi semua brand, approval budget, import source workbook.</td><td>Tidak disarankan dipakai untuk PIC brand.</td></tr>
+                <tr><td>owner</td><td>Melihat visualisasi, statistik, dan tabel ringkasan.</td><td>Tidak bisa tambah, edit, hapus, atau approve.</td></tr>
+                <tr><td>pic_brand</td><td>CRUD data operasional sesuai brand scope.</td><td>Tidak bisa mengubah brand lain dan tidak bisa master user.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="callout info"><b>Password aktif:</b> FinanceDashboard2026. Simpan hanya untuk user internal yang memang diberi akses.</div>
+        `)}
+
+        ${docSection("docs-navigation", "Menu dashboard", "map", `
+          <div class="step-list">
+            ${docStep("Command", "Ringkasan cepat cash in, cash out, net cash, budget request, pending approval, hutang, saldo rekening, dan capaian omzet. Dipakai sebagai layar pertama untuk membaca kesehatan finance harian.")}
+            ${docStep("Analytics", "Analisis lebih dalam per brand, saldo bank/kas, omzet bulanan, prioritas budget, cash in terbaru, cash out terbaru, dan posisi rekening.")}
+            ${docStep("Operasional", "Tempat input dan CRUD data harian: budget, income, forecast, outcome, omzet, bank, service fee, payables, dan receivables.")}
+            ${docStep("Approval", "Antrian budget request yang perlu disetujui, direvisi, atau ditolak oleh finance/superadmin.")}
+            ${docStep("Master", "Pengaturan user, brand, dan source workbook. Menu ini hanya terbuka untuk role yang punya akses manage users.")}
+            ${docStep("Panduan", "Dokumentasi cara kerja dashboard, SOP, aturan data, dan troubleshooting.")}
+          </div>
+        `)}
+
+        ${docSection("docs-daily", "SOP harian finance", "clipboard-check", `
+          <ol class="docs-ordered">
+            <li><b>Pagi hari:</b> buka Command center, cek pending approval, saldo rekening, net cash, dan jatuh tempo dekat.</li>
+            <li><b>Input transaksi:</b> masukkan cash in di Income, cash out di Outcome, dan pengajuan baru di Budget Request.</li>
+            <li><b>Review budget:</b> buka Approval, cek nominal, vendor, tanggal dibutuhkan, prioritas, dan dokumen pendukung.</li>
+            <li><b>Update pembayaran:</b> isi nominal dibayar, jenis bayar, sisa hutang, tanggal pembayaran berikutnya, dan feedback finance.</li>
+            <li><b>Validasi sore:</b> bandingkan dashboard dengan rekening/kas aktual, lalu update Bank Balances jika perlu.</li>
+            <li><b>Audit:</b> cek data yang aneh di raw spreadsheet, terutama tanggal kosong, brand key salah, dan status tidak sesuai.</li>
+          </ol>
+          <div class="callout warn">Jangan mengubah nama kolom di raw spreadsheet. Dashboard membaca kolom berdasarkan nama header.</div>
+        `)}
+
+        ${docSection("docs-crud", "Input dan CRUD operasional", "table-2", `
+          <div class="docs-table-wrap">
+            <table class="docs-table">
+              <thead><tr><th>Modul</th><th>Dipakai untuk</th><th>Kolom penting</th></tr></thead>
+              <tbody>
+                <tr><td>Budget Request</td><td>Pengajuan dana, DP, termin, pelunasan, dan approval.</td><td>Brand, Tgl Pengajuan, Tgl Dibutuhkan, Kategori, Vendor, Nominal, Prioritas, Status.</td></tr>
+                <tr><td>Income</td><td>Pemasukan real yang sudah masuk rekening/kas.</td><td>Tanggal, Keterangan, Customer, Nominal, Bank Masuk.</td></tr>
+                <tr><td>Forecast Cash In</td><td>Estimasi pemasukan yang belum cair.</td><td>Estimasi Cair, Marketplace, Nominal Estimasi, Status.</td></tr>
+                <tr><td>Outcome</td><td>Pengeluaran real dan biaya admin.</td><td>Tanggal, Kategori, Jumlah, Biaya, Bank Keluar.</td></tr>
+                <tr><td>Omzet</td><td>Target dan realisasi omzet per bulan.</td><td>Tahun, Bulan, Target Omzet, Realisasi Omzet.</td></tr>
+                <tr><td>Bank Balances</td><td>Saldo awal, pemasukan, pengeluaran, dan total per bank.</td><td>Bank, Saldo Awal, Pemasukan, Pengeluaran.</td></tr>
+                <tr><td>Payables</td><td>Monitoring hutang vendor/supplier.</td><td>Nama Pemasok, Total Hutang, Total Dibayar, Sisa Hutang.</td></tr>
+                <tr><td>Receivables</td><td>Monitoring piutang customer/client.</td><td>Nama Pelanggan, Total Piutang, Total Diterima, Sisa Piutang.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="callout info">PIC brand hanya bisa membuat, mengubah, dan menghapus data untuk brand yang ada di Brand Scope miliknya.</div>
+        `)}
+
+        ${docSection("docs-approval", "Approval finance", "badge-check", `
+          <p>Approval dipakai untuk mengontrol pengajuan budget sebelum menjadi pembayaran atau hutang berjalan.</p>
+          <div class="step-list">
+            ${docStep("Approved", "Pengajuan disetujui. Finance bisa isi nominal dibayar, status bayar, dan feedback.")}
+            ${docStep("Need Revision", "Pengajuan perlu diperbaiki oleh PIC. Isi feedback dengan catatan yang jelas.")}
+            ${docStep("Rejected", "Pengajuan ditolak. Gunakan jika kebutuhan tidak valid atau dokumen tidak sesuai.")}
+            ${docStep("Termin / DP / Lunas", "Gunakan status pembayaran untuk tracking sisa hutang dan tahapan pembayaran.")}
+          </div>
+          <div class="callout warn">Sebelum approve, cocokkan vendor, nominal, tanggal dibutuhkan, prioritas, dan dokumen URL jika tersedia.</div>
+        `)}
+
+        ${docSection("docs-master", "Master data", "settings-2", `
+          <div class="docs-table-wrap">
+            <table class="docs-table">
+              <thead><tr><th>Sheet master</th><th>Fungsi</th><th>Aturan aman</th></tr></thead>
+              <tbody>
+                <tr><td>Users</td><td>Mengatur email, nama, role, company scope, brand scope, dan status aktif user.</td><td>Gunakan email asli. Brand Scope boleh * atau daftar brand key dipisah koma.</td></tr>
+                <tr><td>Brands</td><td>Mengatur company, brand, brand key, status aktif, dan PIC email.</td><td>Brand Key harus stabil, misalnya BSSM_RBLN. Jangan sering diganti.</td></tr>
+                <tr><td>Source_Workbooks</td><td>Menghubungkan workbook sumber lama untuk proses import.</td><td>Isi Spreadsheet ID, bukan full URL, jika ingin import otomatis.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        `)}
+
+        ${docSection("docs-raw", "Raw spreadsheet dan sinkronisasi", "sheet", `
+          <p>Dashboard dan raw spreadsheet bekerja dua arah. Input dari dashboard akan masuk ke sheet. Edit langsung di sheet akan terbaca dashboard setelah refresh.</p>
+          <div class="step-list">
+            ${docStep("Aman diedit di raw", "Isi baris transaksi, email user, scope, status aktif, PIC email, target omzet, saldo bank, dan catatan operasional.")}
+            ${docStep("Jangan diubah sembarangan", "Nama tab, nama header kolom, urutan kolom besar, format tanggal utama, dan brand key historis.")}
+            ${docStep("Jika ada data tidak muncul", "Cek Brand Key, Active, tanggal filter, role user, dan apakah data berada di tab yang sesuai.")}
+          </div>
+          <div class="callout info">Setelah mengedit raw spreadsheet, klik Refresh di dashboard. Jika browser masih menampilkan data lama, lakukan hard refresh.</div>
+        `)}
+
+        ${docSection("docs-troubleshooting", "Troubleshooting", "wrench", `
+          <div class="docs-table-wrap">
+            <table class="docs-table">
+              <thead><tr><th>Masalah</th><th>Penyebab umum</th><th>Solusi</th></tr></thead>
+              <tbody>
+                <tr><td>Email belum terdaftar</td><td>Email tidak ada di Users atau Active bukan TRUE.</td><td>Tambahkan email ke Users, pilih role, scope, dan set Active TRUE.</td></tr>
+                <tr><td>Password tidak valid</td><td>Password dashboard di Vercel tidak sama dengan yang diketik.</td><td>Gunakan password aktif atau minta superadmin mengganti env FINANCE_APP_LOGIN_CODE.</td></tr>
+                <tr><td>Data brand tidak muncul</td><td>Brand Scope tidak sesuai atau Brand Key salah.</td><td>Cek Brand Scope di Users dan Brand Key di Brands.</td></tr>
+                <tr><td>Dashboard tidak update</td><td>Cache browser atau filter masih aktif.</td><td>Klik Refresh, kosongkan filter, lalu hard refresh browser.</td></tr>
+                <tr><td>Apps Script error</td><td>Deployment belum Anyone atau token berubah.</td><td>Deploy ulang Web App dan pastikan token Vercel sama dengan Script Properties.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        `)}
+
+        ${docSection("docs-faq", "FAQ singkat", "messages-square", `
+          <div class="faq-list">
+            ${faq("Apakah edit di dashboard masuk ke raw spreadsheet?", "Ya. Dashboard menyimpan data lewat Apps Script langsung ke Google Sheets.")}
+            ${faq("Apakah edit di raw spreadsheet masuk ke dashboard?", "Ya, setelah dashboard di-refresh. Pastikan header kolom dan brand key tidak berubah.")}
+            ${faq("Apakah owner bisa edit?", "Tidak. Role owner dirancang hanya untuk melihat statistik dan tabel.")}
+            ${faq("Apakah PIC bisa melihat brand lain?", "Tidak, selama Brand Scope di Users diisi sesuai brand miliknya.")}
+            ${faq("Kapan memakai Import?", "Gunakan saat ingin menarik data dari workbook sumber yang sudah didaftarkan di Source_Workbooks.")}
+          </div>
+        `)}
+      </div>
+    </div>
+  `;
+}
+
+function docCard(title, text, icon) {
+  return `<div class="doc-card"><i data-lucide="${icon}"></i><h3>${escapeHtml(title)}</h3><p>${escapeHtml(text)}</p></div>`;
+}
+
+function docSection(id, title, icon, body) {
+  return `<section class="doc-section panel tight" id="${id}">
+    <div class="doc-section-head"><i data-lucide="${icon}"></i><h3>${escapeHtml(title)}</h3></div>
+    ${body}
+  </section>`;
+}
+
+function docStep(title, text) {
+  return `<div class="doc-step"><strong>${escapeHtml(title)}</strong><p>${escapeHtml(text)}</p></div>`;
+}
+
+function faq(question, answer) {
+  return `<details><summary>${escapeHtml(question)}</summary><p>${escapeHtml(answer)}</p></details>`;
 }
 
 async function loadRows(entity, target) {

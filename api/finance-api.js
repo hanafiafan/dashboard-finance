@@ -43,12 +43,35 @@ export default async function handler(req, res) {
     });
 
     const text = await response.text();
-    const data = safeJson(text) || { ok: false, error: text || "Apps Script mengembalikan response kosong." };
+    const data = safeJson(text);
     res.setHeader("Cache-Control", "no-store");
+    if (!data) {
+      return res.status(response.ok ? 502 : response.status).json({
+        ok: false,
+        error: explainAppsScriptError(text, response.headers.get("content-type")),
+      });
+    }
     return res.status(response.ok ? 200 : response.status).json(data);
   } catch (error) {
     return res.status(502).json({ ok: false, error: error.message || String(error) });
   }
+}
+
+function explainAppsScriptError(text, contentType) {
+  const body = String(text || "");
+  const type = String(contentType || "").toLowerCase();
+  const looksLikeGoogleLogin = /accounts\.google\.com|ServiceLogin|InteractiveLogin|signin/i.test(body);
+  const looksLikeHtml = type.includes("text/html") || /^\s*</.test(body);
+
+  if (looksLikeGoogleLogin) {
+    return "Apps Script Web App belum bisa diakses publik. Buka Apps Script > Deploy > Manage deployments, lalu set Web app access ke Anyone dan deploy ulang.";
+  }
+
+  if (looksLikeHtml) {
+    return "Apps Script mengembalikan halaman HTML, bukan JSON API. Pastikan URL APPS_SCRIPT_API_URL memakai Web App URL yang berakhiran /exec.";
+  }
+
+  return body || "Apps Script mengembalikan response kosong.";
 }
 
 function safeJson(text) {

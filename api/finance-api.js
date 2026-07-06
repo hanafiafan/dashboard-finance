@@ -61,10 +61,11 @@ function explainAppsScriptError(text, contentType) {
   const body = String(text || "");
   const type = String(contentType || "").toLowerCase();
   const looksLikeGoogleLogin = /accounts\.google\.com|ServiceLogin|InteractiveLogin|signin/i.test(body);
+  const looksLikeGoogleDriveError = /Google Drive|Page Not Found|unable to open the file|Please check the address/i.test(body);
   const looksLikeHtml = type.includes("text/html") || /^\s*</.test(body);
 
-  if (looksLikeGoogleLogin) {
-    return "Apps Script Web App belum bisa diakses publik. Buka Apps Script > Deploy > Manage deployments, lalu set Web app access ke Anyone dan deploy ulang.";
+  if (looksLikeGoogleLogin || looksLikeGoogleDriveError) {
+    return "Apps Script Web App belum bisa diakses publik atau URL deployment belum benar. Buka Apps Script > Deploy > Manage deployments, pilih Web app, set Who has access ke Anyone, lalu salin lagi Web app URL yang berakhiran /exec.";
   }
 
   if (looksLikeHtml) {

@@ -206,13 +206,9 @@ function setupFinanceDashboard() {
 function generateApiToken_() {
   const token = Utilities.getUuid().replace(/-/g, '') + Utilities.getUuid().replace(/-/g, '');
   PropertiesService.getScriptProperties().setProperty('FINANCE_API_TOKEN', token);
+  upsertSetting_('FINANCE_API_TOKEN', token, 'Token rahasia untuk env Vercel FINANCE_API_TOKEN. Jangan dibagikan ke publik.');
   logAudit_('system', 'TOKEN_GENERATED', 'api', '', '', '', { message: 'Finance API token generated' });
-
-  try {
-    SpreadsheetApp.getUi().alert('Finance API token', 'Simpan token ini di Vercel env FINANCE_API_TOKEN:\n\n' + token, SpreadsheetApp.getUi().ButtonSet.OK);
-  } catch (error) {
-    Logger.log('FINANCE_API_TOKEN=' + token);
-  }
+  Logger.log('FINANCE_API_TOKEN=' + token);
   return token;
 }
 
@@ -1353,6 +1349,17 @@ function startOfDay_(dateValue) {
 function getSetting_(key, fallback) {
   const found = readTable_(SHEETS.settings).find(row => row.Key === key);
   return found ? found.Value : fallback;
+}
+
+function upsertSetting_(key, value, notes) {
+  ensureSheet_(SHEETS.settings, HEADERS[SHEETS.settings]);
+  const found = readTable_(SHEETS.settings).find(row => String(row.Key || '') === String(key || ''));
+  const record = { Key: key, Value: value, Notes: notes || '' };
+  if (found) {
+    writeRecordToRow_(SHEETS.settings, found._rowNumber, record);
+    return;
+  }
+  appendRecordBySheet_(SHEETS.settings, record);
 }
 
 function uniqueSorted_(items) {

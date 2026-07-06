@@ -24,7 +24,7 @@ export default async function handler(req, res) {
   }
 
   if (!ALLOW_EMAIL_OVERRIDE && (!FINANCE_APP_LOGIN_CODE || loginCode !== FINANCE_APP_LOGIN_CODE)) {
-    return res.status(401).json({ ok: false, error: "Access code tidak valid." });
+    return res.status(401).json({ ok: false, error: "Password tidak valid." });
   }
 
   const payload = {

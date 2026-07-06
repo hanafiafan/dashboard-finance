@@ -187,7 +187,7 @@ async function api(action, args = []) {
   if (app.demo) return demoApi(action, args);
 
   const userEmail = currentEmail();
-  const loginCode = localStorage.getItem("financeJoyboardLoginCode") || "";
+  const loginCode = localStorage.getItem("financeDashboardLoginCode") || localStorage.getItem("financeJoyboardLoginCode") || "";
   const response = await fetch("/api/finance-api", {
     method: "POST",
     headers: { "content-type": "application/json" },
@@ -199,7 +199,7 @@ async function api(action, args = []) {
 }
 
 function currentEmail() {
-  return localStorage.getItem("financeJoyboardEmail") || "";
+  return localStorage.getItem("financeDashboardEmail") || localStorage.getItem("financeJoyboardEmail") || "";
 }
 
 function renderLogin() {
@@ -207,12 +207,12 @@ function renderLogin() {
   root.className = "login-screen";
   root.innerHTML = `
     <section class="login-card">
-      <div class="brand-mark">FJ</div>
-      <h1>Finance Joyboard</h1>
-      <p>${escapeHtml(app.lastError || "Masuk untuk membuka dashboard finance di Vercel.")}</p>
+      <div class="brand-mark">FD</div>
+      <h1>Finance Dashboard</h1>
+      <p>${escapeHtml(app.lastError || "Masuk untuk membuka dashboard finance.")}</p>
       <div class="demo-row">
-        <input id="emailOverride" type="email" placeholder="email user, contoh finance@domain.com">
-        <input id="loginCode" type="password" placeholder="access code Vercel">
+        <input id="emailOverride" type="email" placeholder="email user">
+        <input id="loginCode" type="password" placeholder="password">
       </div>
       <div class="login-actions">
         <button class="btn blue" onclick="loginOverride()"><i data-lucide="log-in"></i>Masuk</button>
@@ -227,9 +227,9 @@ function loginOverride() {
   const email = document.getElementById("emailOverride").value.trim().toLowerCase();
   const loginCode = document.getElementById("loginCode").value.trim();
   if (!email) return showToast("Isi email user dulu.");
-  if (!loginCode) return showToast("Isi access code dulu.");
-  localStorage.setItem("financeJoyboardEmail", email);
-  localStorage.setItem("financeJoyboardLoginCode", loginCode);
+  if (!loginCode) return showToast("Isi password dulu.");
+  localStorage.setItem("financeDashboardEmail", email);
+  localStorage.setItem("financeDashboardLoginCode", loginCode);
   app.demo = false;
   loadState();
 }
@@ -243,13 +243,15 @@ function startDemo() {
 function renderShell() {
   const root = document.getElementById("app");
   const session = app.state.session || {};
+  const appTitle = brandTitle(app.state.app && app.state.app.title);
+  document.title = appTitle;
   root.className = "app-shell";
   root.innerHTML = `
     <aside class="sidebar">
       <div class="brand-lockup">
-        <div class="brand-mark">FJ</div>
+        <div class="brand-mark">FD</div>
         <div>
-          <h1>${escapeHtml(app.state.app.title)}</h1>
+          <h1>${escapeHtml(appTitle)}</h1>
           <span>${escapeHtml(app.state.app.subtitle)}</span>
         </div>
       </div>
@@ -809,6 +811,8 @@ function exportRows(entity) {
 }
 
 function logout() {
+  localStorage.removeItem("financeDashboardEmail");
+  localStorage.removeItem("financeDashboardLoginCode");
   localStorage.removeItem("financeJoyboardEmail");
   localStorage.removeItem("financeJoyboardLoginCode");
   renderLogin();
@@ -835,6 +839,10 @@ function escapeHtml(value) {
 
 function escapeAttr(value) {
   return escapeHtml(value);
+}
+
+function brandTitle(title) {
+  return String(title || "Finance Dashboard").replace(/Finance Joyboard/g, "Finance Dashboard");
 }
 
 function demoApi(action, args) {
@@ -869,7 +877,7 @@ function demoState() {
   ];
   return {
     authorized: true,
-    app: { title: "Finance Joyboard", subtitle: "Dashboard finance Vercel" },
+    app: { title: "Finance Dashboard", subtitle: "Dashboard operasional finance" },
     session: { name: "Demo Finance", role: "finance", permissions: { canApprove: true, canManageUsers: true } },
     brands,
     options: {

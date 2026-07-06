@@ -1,5 +1,5 @@
 const FINANCE_APP = {
-  title: 'Finance Joyboard',
+  title: 'Finance Dashboard',
   subtitle: 'Dashboard operasional finance multi-company dan multi-brand',
   timezone: 'Asia/Jakarta',
   devAllowEmailOverride: false

@@ -1,4 +1,4 @@
-# Finance Joyboard
+# Finance Dashboard
 
 Dashboard finance multi-company dan multi-brand untuk operasional harian finance.
 
@@ -19,7 +19,7 @@ Dashboard finance multi-company dan multi-brand untuk operasional harian finance
 
 ## Setup Google Sheets + Apps Script
 
-1. Upload file `Finance Joyboard Master Database.xlsx` dari folder output lokal Codex ke Google Drive.
+1. Upload file `Finance Dashboard Master Database.xlsx` dari folder output lokal Codex ke Google Drive.
 2. Buka sebagai Google Sheets.
 3. Buka `Extensions` -> `Apps Script`.
 4. Tempel `appscript/Code.gs` ke file `Code.gs`.
@@ -38,7 +38,7 @@ Set environment variables:
 ```text
 APPS_SCRIPT_API_URL=https://script.google.com/macros/s/.../exec
 FINANCE_API_TOKEN=token-dari-generateVercelApiToken
-FINANCE_APP_LOGIN_CODE=kode-login-internal
+FINANCE_APP_LOGIN_CODE=password-login-internal
 ALLOW_EMAIL_OVERRIDE=false
 ```
 
@@ -49,7 +49,7 @@ Lalu deploy project ini di Vercel.
 Login memakai:
 
 - Email user yang sudah terdaftar di sheet `Users`.
-- Access code dari `FINANCE_APP_LOGIN_CODE`.
+- Password dari `FINANCE_APP_LOGIN_CODE`.
 
 Role dan brand scope tetap dikontrol di sheet `Users`.
 
